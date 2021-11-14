@@ -1,7 +1,19 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Emit\**" />
+    <Compile Remove="ExpressionTrees\**" />
+    <Compile Remove="Roslyn\**" />
+    <EmbeddedResource Remove="Emit\**" />
+    <EmbeddedResource Remove="ExpressionTrees\**" />
+    <EmbeddedResource Remove="Roslyn\**" />
+    <None Remove="Emit\**" />
+    <None Remove="ExpressionTrees\**" />
+    <None Remove="Roslyn\**" />
+  </ItemGroup>
 
 </Project>
