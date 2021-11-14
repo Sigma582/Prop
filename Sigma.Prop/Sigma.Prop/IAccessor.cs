@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Text;
-
-namespace Sigma.Prop
+﻿namespace Sigma.Prop
 {
     public interface IAccessor
     {
