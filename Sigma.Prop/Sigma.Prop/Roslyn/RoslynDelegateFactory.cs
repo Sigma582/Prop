@@ -20,24 +20,52 @@ namespace Sigma.Prop.Roslyn
         }
         #endregion
 
-        protected override ConcurrentDictionary<string, Func<object, object>> CreateGetters(Type type)
+        protected override AccessorMethodsCollection CreateAccessorMethods(Type type)
         {
-            var assemblyName = $"Sigma.Prop.{GetTypeName(type)}.Getters.dll";
+            var assemblyName = GetAssemblyName(type);
 
             var builder = new StringBuilder();
 
             foreach (var property in type.GetProperties(BindingFlags.GetProperty | BindingFlags.FlattenHierarchy | BindingFlags.Public | BindingFlags.Instance))
             {
-                if (property.GetGetMethod() == null) continue;
-
-                var getterCode = GenerateGetterCode(property);
-                builder.AppendLine(getterCode);
+                if (property.GetGetMethod() != null)
+                {
+                    var getterCode = GenerateGetterCode(property);
+                    builder.AppendLine(getterCode);
+                }
             }
 
-            Debug.WriteLine($"* RoslynDelegateFactory generated code for getters of type '{GetTypeName(type)}'\r\n{builder}");
+            foreach (var property in type.GetProperties(BindingFlags.SetProperty | BindingFlags.FlattenHierarchy | BindingFlags.Public | BindingFlags.Instance))
+            {
+                if (property.GetSetMethod() != null)
+                {
+                    var setterCode = GenerateSetterCode(property);
+                    builder.AppendLine(setterCode);
+                }
+            }
+
+            Debug.WriteLine($"* RoslynDelegateFactory generated accessors code for type '{GetTypeName(type)}':\r\n{builder}");
 
 
-            return new ConcurrentDictionary<string, Func<object, object>>();
+            return default;
+        }
+
+        private string GetAssemblyName(Type type)
+        {
+            return $"{GetNamespaceName(type)}.dll";
+        }
+
+        private string GetNamespaceName(Type type)
+        {
+            return $"Sigma.Prop.Generated_{GetTypeName(type)}"
+                .Replace('<', '_')
+                .Replace('>', '_')
+                .Replace("[]", "_Array");
+        }
+
+        private string GetConverterTypeName(Type type)
+        {
+            return $"Accessors";
         }
 
         private string GenerateGetterCode(PropertyInfo property)
@@ -47,26 +75,6 @@ namespace Sigma.Prop.Roslyn
                 $"\r\n    if (target == null) return default;" +
                 $"\r\n    return target.{property.Name};" +
                 $"\r\n  }}";
-        }
-
-        protected override ConcurrentDictionary<string, Action<object, object>> CreateSetters(Type type)
-        {
-            var assemblyName = $"Sigma.Prop.{GetTypeName(type)}.Setters.dll";
-
-            var builder = new StringBuilder();
-
-            foreach (var property in type.GetProperties(BindingFlags.SetProperty | BindingFlags.FlattenHierarchy | BindingFlags.Public | BindingFlags.Instance))
-            {
-                if (property.GetSetMethod() == null) continue;
-
-                var setterCode = GenerateSetterCode(property);
-                builder.AppendLine(setterCode);
-            }
-
-            Debug.WriteLine($"* RoslynDelegateFactory generated code for setters of type '{GetTypeName(type)}'\r\n{builder}");
-
-
-            return new ConcurrentDictionary<string, Action<object, object>>();
         }
 
         private string GenerateSetterCode(PropertyInfo property)
