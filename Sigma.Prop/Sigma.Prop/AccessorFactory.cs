@@ -60,8 +60,8 @@ namespace Sigma.Prop
         {
             switch (_implementation)
             {
-                //case Implementation.Roslyn:
-                //    return 
+                case Implementation.Roslyn:
+                    return new RoslynAccessorFactory().CreateAccessor(targetType);
                 case Implementation.Reflection:
                     return new ReflectionAccessor();
 
