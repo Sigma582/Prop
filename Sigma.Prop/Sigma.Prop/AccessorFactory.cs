@@ -5,12 +5,6 @@ using System.Collections.Concurrent;
 
 namespace Sigma.Prop
 {
-    //note:
-    //Since accessors end up being lightweight, with all the heavy lifting done and cached by DelegateFactoryBase and its descendants,
-    // caching accessors within AccessorFactory may be superfluous.
-    //Reconsider if AccessorFactory is needed at all. Possible alternative could be:
-    // * create an 'Accessor' class which instantiates one of the IAccessor implementations according to the config or ctor parameter; and
-    // * let consumers instantiate the Accessor class whenever needed, possibly specifying desired implementation via ctor.
     public class AccessorFactory
     {
         //todo make configurable
@@ -66,8 +60,8 @@ namespace Sigma.Prop
         {
             switch (_implementation)
             {
-                case Implementation.Roslyn:
-                    return new RoslynAccessor();
+                //case Implementation.Roslyn:
+                //    return 
                 case Implementation.Reflection:
                     return new ReflectionAccessor();
 
