@@ -1,0 +1,173 @@
+﻿- Execution times at 100000000 iterations:
+    * Reflection                  : 23.8742541 sec.
+    * Roslyn_Dictionary           : 6.9905756 sec.
+    * Roslyn_Switch               : 7.6887818 sec.
+    * Roslyn_If                   : 7.0718039 sec.
+    * Roslyn_Tree                 : 7.0013477 sec.
+    * Method call                 : 1.6072968 sec.
+    * Method call 2               : 1.3964507 sec.
+    * Method call 3               : 1.2063708 sec.
+    * Direct value access         : 0.6091955 sec.
+
+
+- Conclusions:
+    * {typeof(T).IsInstanceOfType(target)} is much slower than {target is T} (the former not presented)
+
+    * Checking type via {target is T} makes up  contributes ~5% of the fastest implementation to date (if-based method selection). 
+      Consider removing type check and rely on consumer to supply correct objects or eal with the consequences.
+
+    * Using switch is not faster than dictionary search, even if it seemed that way initially.
+
+    * Selecting methods with a chain of ifs can be faster than either dictionary search or switch,
+      depending on number of alternatives we have to check before we land on the right one.
+      The time evens out at about 7(?) checks. In this case, with <15 properties to handle,
+      average number of checked alternatives will be at 7 or below and average execution time will be on par with dictionary or better.
+      Consider using adaptive generation:
+        for target types with low number of properties generate if-based implementation;
+        for target types with higher no. or properties generate dictionary-based implementation.
+      If we could predict how often each particular property will be requested and order the if-statements accordingly, 
+      it could significantly improve average times.
+
+    * Notice how Direct value access is twice as fast as Method call 3, which does the same thing 
+      and only differs by the need to call 1 method and return its result.
+      
+    * All in all, the slowest part in all non-reflection implementations is the need to locate appropriate method based on the property field.
+      This part makes up the difference between the three full implementations (Dictionary/Switch/If) 
+      and Direct method call (or Direct method call 2 once type checks removed from the generated accessors).
+      
+    * Assuming how expensive it is to locate generated methods, doing so for each property is not optimal in situations when multiple 
+      properties need to be processed together (e.g. when updating one object with properties from another one). For those applications
+      it will be more effective to generate a method that will process all properties in sequence and call it once.
+
+      Moreover, for situations when a collection of objects needs to be processed in a batch, it will be best to generate a method that accepts 
+      the whole collection and loops through it and call it once, than call the same method for each object.
+
+- Implementations:
+    
+    * Reflection
+	    item = target.GetType().GetProperty("Item").GetValue(target);
+
+    * Roslyn_Dictionary
+        //generated
+        public class RoslynAccessor
+        {
+            public RoslynAccessor()
+            {
+                Getters["Item"] = GetItem;
+            }
+            ...
+	        public object Get(object target, string propertyName)
+            {
+                if (!Getters.TryGetValue(propertyName, out Func<object, object> getter))
+                {
+                    throw new NotSupportedException();
+                }
+
+                return getter(target);
+            }
+            ...
+            public static object GetItem(object target)
+            {
+                if (target is Sigma.Prop.Workbench.TestClass)
+                    return ((Sigma.Prop.Workbench.TestClass)target).Item;
+                return default;
+            }
+        }
+
+        // TEST
+        item = accessor.Get(target, "Item");
+
+
+    * Roslyn_Switch
+        //generated
+        public class RoslynAccessor
+        {
+            ...
+            public object Get(object target, string propertyName)
+            {
+                switch (propertyName)
+                {
+                    case "Item": return GetItem(target);
+                    case "Id": return GetId(target);
+                    case "Text": return GetText(target);
+                    case "Value": return GetValue(target);
+                    case "Comments": return GetComments(target);
+                    case "Tidbits": return GetTidbits(target);
+                    case "SomethingComplex": return GetSomethingComplex(target);
+                    default: return default;
+                }
+            }
+            ...
+            public static object GetItem(object target)
+            {
+                if (target is Sigma.Prop.Workbench.TestClass)
+                    return ((Sigma.Prop.Workbench.TestClass)target).Item;
+                return default;
+            }
+        }
+
+        // TEST
+        item = accessor.Get(target, "Item");
+
+
+    * Roslyn_If   
+        //generated
+        public class RoslynAccessor
+        {
+            ...
+            public object Get(object target, string propertyName)
+            {
+                    if (propertyName == "Item") return GetItem(target);
+                    if (propertyName == "Id") return GetId(target);
+                    if (propertyName == "Text") return GetText(target);
+                    if (propertyName == "Value") return GetValue(target);
+                    if (propertyName == "Comments") return GetComments(target);
+                    if (propertyName == "Tidbits") return GetTidbits(target);
+                    if (propertyName == "SomethingComplex") return GetSomethingComplex(target);
+                    return default;
+            }
+            ...
+            public static object GetItem(object target)
+            {
+                if (target is Sigma.Prop.Workbench.TestClass)
+                    return ((Sigma.Prop.Workbench.TestClass)target).Item;
+                return default;
+            }
+        }
+
+        // TEST
+        item = accessor.Get(target, "Item");
+
+
+    * Roslyn_Tree
+        same as Roslyn_Dictionary, but storing method mappings in SortedDictionary which is based on a red-black tree
+
+    * Method call
+        public class RoslynAccessor
+        {
+            ...
+            public static object GetItem(object target)
+            {
+                if (target is Sigma.Prop.Workbench.TestClass)
+                    return ((Sigma.Prop.Workbench.TestClass)target).Item;
+                return default;
+            }
+
+            public static object GetItem2(object target)
+            {
+                return ((Sigma.Prop.Workbench.TestClass)target).Item;
+            }
+
+            public static object GetItem3(TestClass target)
+            {
+                return target.Item;
+            }
+        }
+        ...
+        item = RoslynAccessor.GetItem(target);
+        item = RoslynAccessor.GetItem2(target);
+        item = RoslynAccessor.GetItem3(target);
+
+
+    * Direct value access  
+        item = target.Item;

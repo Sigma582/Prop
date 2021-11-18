@@ -143,7 +143,7 @@ namespace Sigma.Prop.Roslyn
         {
             return  $"        public static object Get{property.Name}(object target)" +
                 $"\r\n        {{" +
-                $"\r\n            if (typeof({GetTypeName(property.DeclaringType)}).IsInstanceOfType(target))" +
+                $"\r\n            if (target is {GetTypeName(property.DeclaringType)})" +
                 $"\r\n            return (({GetTypeName(property.DeclaringType)})target).{property.Name};" +
                 $"\r\n            return default;" +
                 $"\r\n        }}";
@@ -153,8 +153,8 @@ namespace Sigma.Prop.Roslyn
         {
             return  $"        public static void Set{property.Name}(object target, object value)" +
                 $"\r\n        {{" +
-                $"\r\n            if (typeof({GetTypeName(property.DeclaringType)}).IsInstanceOfType(target)" +
-                $"\r\n                && typeof({GetTypeName(property.PropertyType)}).IsInstanceOfType(value))" +
+                $"\r\n            if (target is {GetTypeName(property.DeclaringType)}" +
+                $"\r\n                && value is {GetTypeName(property.PropertyType)})" +
                 $"\r\n            (({GetTypeName(property.DeclaringType)}) target).{property.Name} = ({GetTypeName(property.PropertyType)}) value;" +
                 $"\r\n        }}";
         }
