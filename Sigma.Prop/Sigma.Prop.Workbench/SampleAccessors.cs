@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
@@ -190,6 +191,31 @@ namespace Sigma.Prop.Workbench
         {
             throw new System.NotImplementedException();
         }
+
+        public IEnumerable Get(IEnumerable targets, string propertyName)
+        {
+            switch (propertyName)
+            {
+                case "Item": foreach(var target in targets) yield return GetItem(target); break;
+                case "Id": foreach(var target in targets) yield return GetId(target); break;
+                case "Text": foreach(var target in targets) yield return GetText(target); break;
+                case "Value": foreach(var target in targets) yield return GetValue(target); break;
+                case "Comments": foreach(var target in targets) yield return GetComments(target); break;
+                case "Tidbits": foreach(var target in targets) yield return GetTidbits(target); break;
+                case "SomethingComplex": foreach(var target in targets) yield return GetSomethingComplex(target); break;
+                default: foreach(var target in targets) yield return default; break;
+            }
+        }
+
+        public IEnumerable<TProperty> Get<TProperty>(IEnumerable targets, string propertyName)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Set(IEnumerable targets, string propertyName, IEnumerable values)
+        {
+            throw new NotImplementedException();
+        }
     }
 
     public class RoslynAccessor_If : IAccessor
@@ -284,6 +310,27 @@ namespace Sigma.Prop.Workbench
         {
             throw new System.NotImplementedException();
         }
+
+        public IEnumerable Get(IEnumerable targets, string propertyName)
+        {
+            if (propertyName == "Id") foreach(var target in targets) yield return ((Sigma.Prop.Workbench.TestClass)target).Id;
+            if (propertyName == "Text") foreach(var target in targets) yield return ((Sigma.Prop.Workbench.TestClass)target).Text;
+            if (propertyName == "Value") foreach(var target in targets) yield return ((Sigma.Prop.Workbench.TestClass)target).Value;
+            if (propertyName == "Item") foreach(var target in targets) yield return ((Sigma.Prop.Workbench.TestClass)target).Item;
+            if (propertyName == "Comments") foreach(var target in targets) yield return ((Sigma.Prop.Workbench.TestClass)target).Comments;
+            if (propertyName == "Tidbits") foreach(var target in targets) yield return ((Sigma.Prop.Workbench.TestClass)target).Tidbits;
+            if (propertyName == "SomethingComplex") foreach(var target in targets) yield return ((Sigma.Prop.Workbench.TestClass)target).SomethingComplex;
+        }
+
+        public IEnumerable<TProperty> Get<TProperty>(IEnumerable targets, string propertyName)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Set(IEnumerable targets, string propertyName, IEnumerable values)
+        {
+            throw new NotImplementedException();
+        }
     }
 
     public class RoslynAccessor_Tree : IAccessor
@@ -367,14 +414,12 @@ namespace Sigma.Prop.Workbench
 
         public object Get(object target, string propertyName)
         {
-                if (propertyName == "Id") return GetId(target);
-                if (propertyName == "Text") return GetText(target);
-                if (propertyName == "Value") return GetValue(target);
-                if (propertyName == "Comments") return GetComments(target);
-                if (propertyName == "Tidbits") return GetTidbits(target);
-                if (propertyName == "SomethingComplex") return GetSomethingComplex(target);
-                if (propertyName == "Item") return GetItem(target);
-                return default;
+            if (!Getters.TryGetValue(propertyName, out Func<object, object> getter))
+            {
+                throw new NotSupportedException();
+            }
+
+            return getter(target);
         }
 
         public TProperty Get<TProperty>(object target, string propertyName)
@@ -390,6 +435,29 @@ namespace Sigma.Prop.Workbench
         public void Set(object target, string propertyName, object value)
         {
             throw new System.NotImplementedException();
+        }
+
+        public IEnumerable Get(IEnumerable targets, string propertyName)
+        {
+            if (!Getters.TryGetValue(propertyName, out Func<object, object> getter))
+            {
+                throw new NotSupportedException();
+            }
+
+            foreach (var target in targets)
+            {
+                yield return getter(target);
+            }
+        }
+
+        public IEnumerable<TProperty> Get<TProperty>(IEnumerable targets, string propertyName)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Set(IEnumerable targets, string propertyName, IEnumerable values)
+        {
+            throw new NotImplementedException();
         }
     }
 }

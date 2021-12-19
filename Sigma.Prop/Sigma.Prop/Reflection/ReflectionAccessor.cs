@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections;
+using System.Collections.Generic;
 
 namespace Sigma.Prop.Reflection
 {
@@ -45,6 +47,27 @@ namespace Sigma.Prop.Reflection
 
             var property = target.GetType().GetProperty(propertyName);
             property.SetValue(target, value);
+        }
+
+        public IEnumerable Get(IEnumerable targets, string propertyName)
+        {
+            foreach (var target in targets)
+            {
+                var property = target.GetType().GetProperty(propertyName);
+                var value = property.GetValue(target);
+
+                yield return value;
+            }
+        }
+
+        public IEnumerable<TProperty> Get<TProperty>(IEnumerable targets, string propertyName)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Set(IEnumerable targets, string propertyName, IEnumerable values)
+        {
+            throw new NotImplementedException();
         }
     }
 }

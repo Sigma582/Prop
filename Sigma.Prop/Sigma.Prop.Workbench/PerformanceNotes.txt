@@ -42,6 +42,9 @@
       Moreover, for situations when a collection of objects needs to be processed in a batch, it will be best to generate a method that accepts 
       the whole collection and loops through it and call it once, than call the same method for each object.
 
+TODO: try replacing 'foreach' with 'while(MoveNext())' or 'for'
+
+
 - Implementations:
     
     * Reflection
