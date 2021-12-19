@@ -22,64 +22,74 @@ namespace Sigma.Prop.Workbench
             //t = test.Get("Tidbits");
             //test.Item = new Item();
 
-            MeasureDuration(new MeasureSingle());
-            MeasureDuration(new MeasureBatch());
+            var iterations = 5 * 1000 * 1000;
+            var target = new List<TestClass>(iterations);
+            for (int i = 0; i < iterations; i++)
+            {
+                target.Add(new TestClass());
+            }
+
+            MeasureDuration(new MeasureSingle(), target);
+            MeasureDuration(new MeasureBatch(), target);
+            Console.ReadLine();
         }
 
-        private static void MeasureDuration(IMeasureMethods measureMethods, int iterations = 100000000)
+        private static void MeasureDuration(IMeasureMethods measureMethods, IList<TestClass> target)
         {
             IAccessor accessor;
-            //accessor = new ReflectionAccessor();
-            //var reflectionDuration = measureMethods.MeasureDuration(iterations, accessor);
-            //
-            accessor = new RoslynAccessor(typeof(TestClass), Implementation.Roslyn, "");
-            var roslynDuration = measureMethods.MeasureDuration(iterations, accessor);
-            //
-            //var roslynDurationDirectMethod = measureMethods.MeasureDurationDirectMethod(iterations);
-            //var roslynDurationDirectMethod2 = measureMethods.MeasureDurationDirectMethod2(iterations);
-            //var roslynDurationDirectMethod3 = measureMethods.MeasureDurationDirectMethod3(iterations);
-            //
-            //accessor = new RoslynAccessor_Switch(typeof(TestClass), Implementation.Roslyn, "");
-            //var roslynDurationSwitch = measureMethods.MeasureDuration(iterations, accessor);
-            //
-            //accessor = new RoslynAccessor_If(typeof(TestClass), Implementation.Roslyn, "");
-            //var roslynDurationIf = measureMethods.MeasureDuration(iterations, accessor);
-            //
-            //accessor = new RoslynAccessor_Tree(typeof(TestClass), Implementation.Roslyn, "");
-            //var roslynDurationTree = measureMethods.MeasureDuration(iterations, accessor);
-            //
-            //var directDuration = measureMethods.MeasureDurationDirectAccess(iterations);
-            //
-            //Debug.WriteLine($"Execution time at {iterations} iterations:");
-            //Debug.WriteLine($"* Reflection                  : {reflectionDuration.TotalSeconds} sec.");
-            Debug.WriteLine($"* Roslyn_Dictionary           : {roslynDuration.TotalSeconds} sec.");
-            //Debug.WriteLine($"* Roslyn_Switch               : {roslynDurationSwitch.TotalSeconds} sec.");
-            //Debug.WriteLine($"* Roslyn_If                   : {roslynDurationIf.TotalSeconds} sec.");
-            //Debug.WriteLine($"* Roslyn_Tree                 : {roslynDurationTree.TotalSeconds} sec.");
-            //Debug.WriteLine($"* Direct method call          : {roslynDurationDirectMethod.TotalSeconds} sec.");
-            //Debug.WriteLine($"* Direct method call 2        : {roslynDurationDirectMethod2.TotalSeconds} sec.");
-            //Debug.WriteLine($"* Direct method call 3        : {roslynDurationDirectMethod3.TotalSeconds} sec.");
-            //Debug.WriteLine($"* Direct value access         : {directDuration.TotalSeconds} sec.");
+            accessor = new ReflectionAccessor();
+            var reflectionDuration = measureMethods.MeasureDuration(target, accessor);
+
+            accessor = new SampleAccessor_Dictionary();
+            var roslynDuration = measureMethods.MeasureDuration(target, accessor);
+
+            var roslynDurationDirectMethod = measureMethods.MeasureDurationDirectMethod(target);
+            var roslynDurationDirectMethod2 = measureMethods.MeasureDurationDirectMethod2(target);
+            var roslynDurationDirectMethod3 = measureMethods.MeasureDurationDirectMethod3(target);
+
+            accessor = new SampleAccessor_Switch();
+            var roslynDurationSwitch = measureMethods.MeasureDuration(target, accessor);
+
+            accessor = new SampleAccessor_If();
+            var roslynDurationIf = measureMethods.MeasureDuration(target, accessor);
+
+            accessor = new SampleAccessor_Tree();
+            var roslynDurationTree = measureMethods.MeasureDuration(target, accessor);
+
+            var directDuration = measureMethods.MeasureDurationDirectAccess(target);
+
+            Console.WriteLine($"Execution time at {target.Count} items, using method accepting {measureMethods.ParameterKind}:");
+            Console.WriteLine($"* Reflection                  : {reflectionDuration.TotalSeconds} sec.");
+            Console.WriteLine($"* Dictionary                  : {roslynDuration.TotalSeconds} sec.");
+            Console.WriteLine($"* Switch                      : {roslynDurationSwitch.TotalSeconds} sec.");
+            Console.WriteLine($"* If                          : {roslynDurationIf.TotalSeconds} sec.");
+            Console.WriteLine($"* Tree                        : {roslynDurationTree.TotalSeconds} sec.");
+            Console.WriteLine($"* Direct method call          : {roslynDurationDirectMethod.TotalSeconds} sec.");
+            Console.WriteLine($"* Direct method call 2        : {roslynDurationDirectMethod2.TotalSeconds} sec.");
+            Console.WriteLine($"* Direct method call 3        : {roslynDurationDirectMethod3.TotalSeconds} sec.");
+            Console.WriteLine($"* Direct value access         : {directDuration.TotalSeconds} sec.");
         }
     }
 
     public interface IMeasureMethods
     {
-        TimeSpan MeasureDuration(int iterations, IAccessor accessor);
-        TimeSpan MeasureDurationDirectAccess(int iterations);
-        TimeSpan MeasureDurationDirectMethod(int iterations);
-        TimeSpan MeasureDurationDirectMethod2(int iterations);
-        TimeSpan MeasureDurationDirectMethod3(int iterations);
+        string ParameterKind { get; }
+
+        TimeSpan MeasureDuration(IList<TestClass> target, IAccessor accessor);
+        TimeSpan MeasureDurationDirectAccess(IList<TestClass> target);
+        TimeSpan MeasureDurationDirectMethod(IList<TestClass> target);
+        TimeSpan MeasureDurationDirectMethod2(IList<TestClass> target);
+        TimeSpan MeasureDurationDirectMethod3(IList<TestClass> target);
     }
 
     public class MeasureSingle : IMeasureMethods
     {
-        public TimeSpan MeasureDuration(int iterations, IAccessor accessor)
-        {
-            var targets = new TestClassBatch(iterations);
+        public string ParameterKind => "single item";
 
+        public TimeSpan MeasureDuration(IList<TestClass> target, IAccessor accessor)
+        {
             var startTime = DateTime.Now;
-            var e = targets.GetEnumerator();
+            var e = target.GetEnumerator();
             while (e.MoveNext())
             {
                 _ = accessor.Get(e.Current, "Item");
@@ -88,53 +98,45 @@ namespace Sigma.Prop.Workbench
             return duration;
         }
 
-        public TimeSpan MeasureDurationDirectAccess(int iterations)
+        public TimeSpan MeasureDurationDirectAccess(IList<TestClass> target)
         {
-            var targets = new TestClassBatch(iterations);
-
             var startTime = DateTime.Now;
-            foreach (var target in targets)
+            foreach (var item in target)
             {
-                _ = target.Item;
+                _ = item.Item;
             }
             var duration = DateTime.Now - startTime;
             return duration;
         }
 
-        public TimeSpan MeasureDurationDirectMethod(int iterations)
+        public TimeSpan MeasureDurationDirectMethod(IList<TestClass> target)
         {
-            var targets = new TestClassBatch(iterations);
-
             var startTime = DateTime.Now;
-            foreach (var target in targets)
+            foreach (var item in target)
             {
-                _ = RoslynAccessor.GetItem(target);
+                _ = SampleAccessor_Dictionary.GetItem(item);
             }
             var duration = DateTime.Now - startTime;
             return duration;
         }
 
-        public TimeSpan MeasureDurationDirectMethod2(int iterations)
+        public TimeSpan MeasureDurationDirectMethod2(IList<TestClass> target)
         {
-            var targets = new TestClassBatch(iterations);
-
             var startTime = DateTime.Now;
-            foreach (var target in targets)
+            foreach (var item in target)
             {
-                _ = RoslynAccessor.GetItem2(target);
+                _ = SampleAccessor_Dictionary.GetItem2(item);
             }
             var duration = DateTime.Now - startTime;
             return duration;
         }
 
-        public TimeSpan MeasureDurationDirectMethod3(int iterations)
+        public TimeSpan MeasureDurationDirectMethod3(IList<TestClass> target)
         {
-            var targets = new TestClassBatch(iterations);
-
             var startTime = DateTime.Now;
-            foreach (var target in targets)
+            foreach (var item in target)
             {
-                _ = RoslynAccessor.GetItem3(target);
+                _ = SampleAccessor_Dictionary.GetItem3(item);
             }
             var duration = DateTime.Now - startTime;
             return duration;
@@ -143,68 +145,61 @@ namespace Sigma.Prop.Workbench
 
     public class MeasureBatch : IMeasureMethods
     {
-        public TimeSpan MeasureDuration(int iterations, IAccessor accessor)
-        {
-            var target = new TestClassBatch(iterations);
+        public string ParameterKind => "IEnumerable<T>";
 
+        public TimeSpan MeasureDuration(IList<TestClass> target, IAccessor accessor)
+        {
             var startTime = DateTime.Now;
             //var items = accessor.Get(target, "Item").Cast<object>().ToList();
-            while (accessor.Get(target, "Item").GetEnumerator().MoveNext())
+            var enumerator = accessor.Get(target, "Item").GetEnumerator();
+            while (enumerator.MoveNext())
             {
-
+                _ = enumerator.Current;
             }
 
             var duration = DateTime.Now - startTime;
             return duration;
         }
 
-        public TimeSpan MeasureDurationDirectAccess(int iterations)
+        public TimeSpan MeasureDurationDirectAccess(IList<TestClass> target)
         {
-            var target = new TestClass();
-
             var startTime = DateTime.Now;
-            for (int i = 0; i < iterations; i++)
+            foreach (var item in target)
             {
-                _ = target.Item;
+                _ = item.Item;
             }
             var duration = DateTime.Now - startTime;
             return duration;
         }
 
-        public TimeSpan MeasureDurationDirectMethod(int iterations)
+        public TimeSpan MeasureDurationDirectMethod(IList<TestClass> target)
         {
-            var targets = new TestClassBatch(iterations);
-
             var startTime = DateTime.Now;
-            foreach (var target in targets)
+            foreach (var item in target)
             {
-                _ = RoslynAccessor.GetItem(target);
+                _ = SampleAccessor_Dictionary.GetItem(item);
             }
             var duration = DateTime.Now - startTime;
             return duration;
         }
 
-        public TimeSpan MeasureDurationDirectMethod2(int iterations)
+        public TimeSpan MeasureDurationDirectMethod2(IList<TestClass> target)
         {
-            var targets = new TestClassBatch(iterations);
-
             var startTime = DateTime.Now;
-            foreach (var target in targets)
+            foreach (var item in target)
             {
-                _ = RoslynAccessor.GetItem2(target);
+                _ = SampleAccessor_Dictionary.GetItem2(item);
             }
             var duration = DateTime.Now - startTime;
             return duration;
         }
 
-        public TimeSpan MeasureDurationDirectMethod3(int iterations)
+        public TimeSpan MeasureDurationDirectMethod3(IList<TestClass> target)
         {
-            var targets = new TestClassBatch(iterations);
-
             var startTime = DateTime.Now;
-            foreach (var target in targets)
+            foreach (var item in target)
             {
-                _ = RoslynAccessor.GetItem3(target);
+                _ = SampleAccessor_Dictionary.GetItem3(item);
             }
             var duration = DateTime.Now - startTime;
             return duration;
@@ -213,23 +208,22 @@ namespace Sigma.Prop.Workbench
 
     public class TestClassBase
     {
+        protected Random Rand = new Random();
+
         public TestClassBase()
         {
-            var r = new Random();
-
-            Id = r.Next(0, int.MaxValue);
-            Value = r.Next(0, int.MaxValue);
+            Id = Rand.Next(0, int.MaxValue);
+            Value = Rand.Next(0, int.MaxValue);
             Text = Path.GetRandomFileName();
-            Comments = new List<string> 
+            Comments = new List<string>
             {
                   Path.GetRandomFileName()
                 , Path.GetRandomFileName()
                 , Path.GetRandomFileName()
-                , Path.GetRandomFileName() 
             };
 
-            Tidbits = new byte[10];
-            r.NextBytes(Tidbits);
+            Tidbits = new byte[4];
+            Rand.NextBytes(Tidbits);
         }
 
         public int Id { get; private set; }
@@ -242,7 +236,7 @@ namespace Sigma.Prop.Workbench
 
         public byte[] Tidbits { get; set; }
 
-        public Dictionary<string,List<TestClass[]>>[] SomethingComplex { get; set; }
+        public Dictionary<string, List<TestClass[]>>[] SomethingComplex { get; set; }
     }
 
     public class TestClass : TestClassBase
@@ -258,45 +252,5 @@ namespace Sigma.Prop.Workbench
     public class Item : ItemBase
     {
 
-    }
-
-    public class TestClassBatch : IEnumerable<TestClass>, IEnumerator<TestClass>
-    {
-        private readonly int _count;
-        private int _current;
-        private TestClass _item = new TestClass();
-
-        public TestClassBatch(int count)
-        {
-            _count = count;
-        }
-
-        public TestClass Current => _item;
-
-        object IEnumerator.Current => Current;
-
-        public bool MoveNext()
-        {
-            return _current++ < _count;
-        }
-
-        public void Reset()
-        {
-            _current = 0;
-        }
-        public IEnumerator<TestClass> GetEnumerator()
-        {
-            return this;
-        }
-
-        public void Dispose()
-        {
-            
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return this;
-        }
     }
 }

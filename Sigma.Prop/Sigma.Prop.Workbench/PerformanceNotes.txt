@@ -1,14 +1,14 @@
-﻿- Execution times at 100000000 iterations:
-    * Reflection                  : 23.8742541 sec.
-    * Roslyn_Dictionary           : 6.9905756 sec.
-    * Roslyn_Switch               : 7.6887818 sec.
-    * Roslyn_If                   : 7.0718039 sec.
-    * Roslyn_Tree                 : 7.0013477 sec.
-    * Method call                 : 1.6072968 sec.
-    * Method call 2               : 1.3964507 sec.
-    * Method call 3               : 1.2063708 sec.
-    * Direct value access         : 0.6091955 sec.
-
+﻿Execution time at 1000000 items
+Method accepting               single item    IEnumerable<T>
+* Reflection                   0.325145 sec.  0.316571 sec.
+* Switch                       0.082234 sec.  0.080049 sec.
+* Tree                         0.093092 sec.  0.086470 sec.
+* Dictionary                   0.108905 sec.  0.087520 sec.
+* If                           0.152830 sec.  0.089500 sec.
+* Direct method call           0.038854 sec.  0.038222 sec.
+* Direct method call 2         0.037595 sec.  0.036793 sec.
+* Direct method call 3         0.037569 sec.  0.037927 sec.
+* Direct value access          0.034860 sec.  0.034375 sec.
 
 - Conclusions:
     * {typeof(T).IsInstanceOfType(target)} is much slower than {target is T} (the former not presented)
@@ -40,7 +40,15 @@
       it will be more effective to generate a method that will process all properties in sequence and call it once.
 
       Moreover, for situations when a collection of objects needs to be processed in a batch, it will be best to generate a method that accepts 
-      the whole collection and loops through it and call it once, than call the same method for each object.
+      the whole collection and loops through it and call it once, rather than call the same method for each object.
+
+    * Using for tests faux-IEnumerable that returns the same object multiple times leads to strange results that don't correlate to results on a List<T>.
+
+    * Using large number of test objects uses up all available memory and slows down the system distorting results
+
+    * Surprisingly, with methods accepting collection of targets, if-based implementation gives smaller advantage over other implementations than
+      with methods using single target, even if the requestd property is listed first.
+      
 
 TODO: try replacing 'foreach' with 'while(MoveNext())' or 'for'
 
